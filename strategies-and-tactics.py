@@ -21,15 +21,15 @@ from hypothesis import given, settings, strategies as st
 
 # Remove the mark.xfail decorator,
 # then improve the filter function to make the test pass.
-@pytest.mark.xfail
-@given(st.integers().filter(lambda x: True))
+# @pytest.mark.xfail
+@given(st.integers().filter(lambda x: x % 2 == 0))
 def test_filter_even_numbers(x):
     # If we convert any even integer to a string, the last digit will be even.
     assert str(x)[-1] in "02468"
 
 
-@pytest.mark.xfail
-@given(st.integers())
+# @pytest.mark.xfail
+@given(st.integers().filter(lambda x: x % 2 == 1))
 def test_filter_odd_numbers(x):
     # If we convert any odd integer to a string, the last digit will be odd.
     assert str(x)[-1] in "13579"
@@ -54,15 +54,15 @@ def test_filter_odd_numbers(x):
 # You'll need to change the value of the integer, then convert it to a string.
 
 
-@pytest.mark.xfail
-@given(st.integers())
+# @pytest.mark.xfail
+@given(st.integers().map(lambda x: str(2 * x)))
 def test_map_even_numbers(x):
     # Check that last character of string x is a substring of "02468"
     assert x[-1] in "02468"
 
 
-@pytest.mark.xfail
-@given(st.integers())
+# @pytest.mark.xfail
+@given(st.integers().map(lambda x: str(2 * x + 1)))
 def test_map_odd_numbers(x):
     assert x[-1] in "13579"
 
@@ -98,6 +98,10 @@ def test_map_odd_numbers(x):
 # if you want to compare them, and has some extension problems that you
 # could write as tests here instead.
 
+# json_strat = st.recursive(
+#     st.none() | st.booleans() | st.integers() | st.floats() | st.text(),
+#     lambda substrat: st.lists(substrat) | st.dictionaries(st.text(), substrat),
+# )
 
 # JSON values are defined as one of null, false, true, a finite number,
 # a string, an array of json values, or a dict of string to json values.
@@ -106,6 +110,11 @@ json_strat = st.deferred(
         st.none(),
         st.booleans(),
         # TODO: Write out the rest of this definition in Hypothesis strategies!
+        st.integers(),
+        st.floats(),
+        st.text(),
+        st.lists(json_strat),
+        st.dictionaries(st.text(), json_strat)
     )
 )
 # If in doubt, you can copy-paste the definition of json_strat to an interactive
@@ -160,8 +169,11 @@ def a_composite_strategy(draw):
        ([-1, -2, -3, 4], 3)
     """
     # TODO: draw a list, determine the allowed indices, and choose one to return
-    lst = []  # TODO: draw a list of integers here
-    index = None
+    lst = draw(st.lists(st.integers(min_value=1)))  # TODO: draw a list of integers here
+    if len(lst) > 0:
+        index = draw(st.integers(min_value=0, max_value=len(lst) - 1))
+    else:
+        index = None
     # TODO: determine the list of allowed indices, and choose one if non-empty
     return (lst, index)
 

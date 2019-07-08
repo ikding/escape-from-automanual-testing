@@ -19,6 +19,7 @@ Good luck, and enjoy!
 """
 
 import json
+from string import printable
 from collections import Counter
 
 import pytest
@@ -47,7 +48,7 @@ def sort_a_list(lst):
     # TODO: After fixing the tests, fix this function.
     #       You may use a builtin function  OR write
     #       a sort function yourself.
-    return lst[::-1]
+    return sorted(lst)
 
 
 def test_sort_a_list_basic():
@@ -58,6 +59,7 @@ def test_sort_a_list_basic():
     assert sort_a_list([1, 1]) == [1, 1]
     assert sort_a_list([3, 2, 1]) == [1, 2, 3]
     # add an assertion here
+    assert sort_a_list([2, 3, 1]) == [1, 2, 3]
 
 
 @pytest.mark.parametrize(
@@ -66,11 +68,11 @@ def test_sort_a_list_basic():
         [],
         [1],
         [1, 1],
-        [3, 2, 1]
-        # add an example case here
+        [3, 2, 1],
+        [2, 3, 1]
     ),
 )
-def test_sort_a_list_parametrize(lst):
+def test_sort_a_list_parameterize(lst):
     """This is a parameterized test that leverages the built-in `sorted`
     function as an 'oracle' that we can compare against.
 
@@ -92,6 +94,7 @@ def test_sort_a_list_hypothesis(lst):
     new = sort_a_list(list(lst))
     assert Counter(lst) == Counter(new)  # sorted list must have same elements
     # TODO: assert that the list is in correct order
+    assert sorted(lst) == new
 
 
 """
@@ -127,7 +130,8 @@ https://hypothesis.readthedocs.io/en/latest/data.html#hypothesis.strategies.list
 """
 
 
-@given(st.just([1, 2, 3]))  # update this search strategy to be more-general
+# @given(st.just([1, 2, 3]))  # update this search strategy to be more-general
+@given(lst=st.lists(st.integers(min_value=1), min_size=2))
 def test_sum_of_list_greater_than_max(lst):
     # TODO: *without* changing the test body, write the most general
     #       argument to @given that will pass for lists of integers.
@@ -193,10 +197,13 @@ def leftpad(string, width, fillchar):
     """
     assert isinstance(width, int) and width >= 0, width
     assert isinstance(fillchar, type(u"")) and len(fillchar) == 1, fillchar
-    return string  # Uh oh, we haven't padded this at all!
+    # return string  # Uh oh, we haven't padded this at all!
+    string_len_diff = width - len(string)
+    if string_len_diff > 0:
+        string = fillchar * string_len_diff + string
+    return string
 
-
-@given(string=st.text(), width=st.just(0), fillchar=st.characters())
+@given(string=st.text(), width=st.integers(min_value=0, max_value=1000), fillchar=st.characters())
 def test_leftpad(string, width, fillchar):
     # TODO: allow any `width` from zero up to e.g. 1000 (capped for performance)
     padded = leftpad(string, width, fillchar)
@@ -205,7 +212,7 @@ def test_leftpad(string, width, fillchar):
     #       Avoid using redundant code/logic between your test
     #       and the function that you are writing - they may have
     #       the same bugs!
-
+    assert len(padded) >= width
 
 """
 Takeaway
@@ -285,10 +292,16 @@ class Record(object):
         This is a *bad* method. This needs to be fixed
         """
         value = string
-        return cls(value)
+        # if string == "null":
+        #     return None
+        # else:
+        return json.loads(string)
+        # return cls(value)
 
 
 # We can define recursive strategies like so:
+# json_strat = st.recursive(st.none() | st.booleans() | st.floats() | st.text(printable),
+#                           lambda children: st.lists(children, 1) | st.dictionaries(st.text(printable), children, min_size=1))
 json_strat = st.recursive(
     st.none() | st.booleans() | st.integers() | st.floats() | st.text(),
     lambda substrat: st.lists(substrat) | st.dictionaries(st.text(), substrat),
@@ -302,6 +315,13 @@ def test_record_json_roundtrip(record):
     string = record.to_json()
     new = Record.from_json(string)
     # TODO: assert that the new and old records match
+    if json.loads(string) != new:
+        print(json.loads(string), type(json.loads(string)), new, type(new))
+    # if string == "null":
+    #     assert new is None
+    # else:
+    assert json.loads(string) == new
+
 
 
 # Extension option: imagine that we are sending serialised records to an

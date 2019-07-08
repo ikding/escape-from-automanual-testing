@@ -234,7 +234,22 @@ def test_mean_properties(data, type_, strat):
     if type_ is Fraction:
         assert min(values) <= result <= max(values)
     # What constraints make sense for an integer mean?
+    elif type_ is int:
+        assert min(values) <= result <= max(values)
+    elif type_ is float:
+        assert min(values) <= result <= max(values)
 
     # TODO: metamorphic test assertions.  For example, how should result
     # change if you add the mean to values?  a number above or below result?
     # Remove some elements from values?
+    values_add_mean = values + [result]
+    result_add_mean = mean(values_add_mean)
+    assert result_add_mean == result
+
+    values_add_below_mean = values + [result - 1]
+    result_add_below_mean = mean(values_add_below_mean)
+    assert result_add_below_mean < result
+
+    values_add_above_mean = values + [result + 1]
+    result_add_above_mean = mean(values_add_above_mean)
+    assert result_add_above_mean > result
